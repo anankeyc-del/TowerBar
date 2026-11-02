@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Tournée Générale : Vichy</title>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#12132a;--ink:#f4f1ff;--cyan:#3ee0ff;--pink:#ff4fa3;--amber:#ffb020;--xa:#ff7a1a;--green:#7cf29a;--muted:#8b8fb8}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Rubik,system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+  canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
+  #hud{position:fixed;left:0;right:0;top:0;padding:7px 8px 4px;display:flex;gap:6px;align-items:stretch;justify-content:center;pointer-events:none;background:linear-gradient(#12132af2,#12132a00)}
+  .pill{background:#1f2142e6;border:1px solid #34386a;border-radius:12px;padding:4px 8px;font-size:11px;font-weight:600;white-space:nowrap}
+  #clock{font-family:Bungee;font-size:18px;color:var(--amber);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;min-width:66px}
+  #clock small{font-family:Rubik;font-size:9px;color:var(--muted);margin-top:2px}
+  #gauges{flex:1;min-width:0;max-width:360px;display:flex;flex-direction:column;gap:3px;justify-content:center}
+  .g{display:flex;align-items:center;gap:5px}
+  .g span{width:56px;font-size:10.5px}
+  .g b{width:44px;text-align:right;font-size:10.5px}
+  .bar{flex:1;height:7px;border-radius:6px;background:#2a2c55;overflow:hidden;position:relative}
+  .bar i{display:block;height:100%;width:0;transition:width .25s}
+  #meF{background:linear-gradient(90deg,#3ee0ff,#ffd34d,#ff5a5a)}
+  #xaF{background:linear-gradient(90deg,#ffb36b,#ff7a1a,#ff3d3d)}
+  #bonF{background:repeating-linear-gradient(45deg,#ff7a1a,#ff7a1a 4px,#ffb020 4px,#ffb020 8px)}
+  .bar .coma{position:absolute;right:0;top:0;bottom:0;width:6%;background:#ff3d3d55}
+  #score{display:flex;flex-direction:column;justify-content:center;align-items:center;font-size:13px;font-weight:800;min-width:62px}
+  #score .me{color:var(--cyan)} #score .xa{color:var(--xa)}
+  #bottom{position:fixed;left:0;right:0;bottom:0;padding:6px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:8px;align-items:flex-end;background:linear-gradient(#12132a00,#12132af0 40%)}
+  #ticker{flex:1;min-width:0;font-size:12px;line-height:1.35;color:#d9d6f5;pointer-events:none}
+  #ticker div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.55}
+  #ticker div:last-child{opacity:1}
+  button{font-family:Rubik;font-weight:800;border:none;border-radius:14px;cursor:pointer;color:#12132a}
+  button:disabled{opacity:.4}
+  #pause{background:#2a2c55;color:var(--ink);padding:10px 12px;font-size:14px}
+  .overlay{touch-action:pan-y;position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0b0c1ee8;z-index:10;padding:16px;overflow:auto}
+  .card{max-width:450px;width:100%;text-align:center;margin:auto}
+  h1{font-family:Bungee;font-size:32px;line-height:1.02;margin:0 0 4px;color:var(--amber);text-shadow:0 0 18px #ffb02088,0 0 2px #fff}
+  h1 small{display:block;font-size:16px;color:var(--pink);text-shadow:0 0 14px #ff4fa388}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 12px}
+  .rules{text-align:left;background:#1b1d3a;border:1px solid #2f3263;border-radius:16px;padding:11px 13px;font-size:13px;line-height:1.45;margin-bottom:12px}
+  .rules b{color:var(--cyan)} .rules .x{color:var(--xa)}
+  .rules ul{margin:6px 0 0;padding-left:18px}
+  .big{padding:13px 22px;font-size:16px;background:var(--amber)}
+  .fine{font-size:11px;color:#6d71a0;margin-top:12px}
+  #best{font-size:13px;color:var(--cyan);margin-top:8px}
+  #end h2{font-family:Bungee;font-size:28px;margin:0 0 6px}
+  .stats{background:#1b1d3a;border:1px solid #2f3263;border-radius:16px;padding:10px 14px;text-align:left;font-size:14px;line-height:1.65;margin:12px 0}
+  .vs{display:flex;gap:8px;margin-top:10px}
+  .vs div{flex:1;border-radius:14px;padding:10px;background:#1b1d3a;border:2px solid #2f3263}
+  .vs .w{border-color:var(--amber)}
+  .vs b{display:block;font-family:Bungee;font-size:26px}
+  .rps{display:flex;gap:8px;margin:10px 0 6px}
+  .rps button{flex:1;font-size:34px;padding:10px 0;background:#2f3263;color:#fff;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .rps button small{font-size:11px;font-weight:600;color:var(--muted)}
+  .rpsres{text-align:center;font-size:14px;min-height:20px}
+  .hidden{display:none!important}
+  .lb{background:#1b1d3a;border:1px solid #2f3263;border-radius:16px;padding:10px 12px;text-align:left;margin:12px 0;font-size:13.5px}
+  .lb h4{margin:0 0 6px;font-family:Bungee;font-size:15px;color:var(--amber);font-weight:400}
+  .lb ol{margin:0;padding-left:26px;line-height:1.6}
+  .lb li span{float:right;font-weight:800;color:var(--cyan)}
+  .lb li.mine{color:var(--amber)}
+  .lb .msg{color:var(--muted);font-size:12px}
+  .save{display:flex;gap:6px;margin:10px 0}
+  .save input{flex:1;min-width:0;border-radius:12px;border:2px solid #3b3f76;background:#12132a;color:var(--ink);font:600 15px Rubik;padding:10px 12px;outline:none}
+  .save input:focus{border-color:var(--cyan)}
+  .save button{background:var(--cyan);padding:10px 14px;font-size:14px}
+  #sheet{position:fixed;left:0;right:0;bottom:0;z-index:5;background:#1a1c3a;border-top:2px solid #3b3f76;border-radius:22px 22px 0 0;padding:12px 12px calc(10px + env(safe-area-inset-bottom));max-height:56%;overflow:auto;box-shadow:0 -10px 40px #0008;max-width:560px;margin:0 auto;animation:up .2s ease-out}
+  @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  #sheet h3{font-family:Bungee;font-size:18px;margin:0;color:var(--amber)}
+  .tags{display:flex;gap:5px;flex-wrap:wrap;margin:4px 0 8px}
+  .tag{font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px;background:#2a2c55;color:#cfd2ff}
+  .tag.me{background:#0d5566;color:var(--cyan)} .tag.xa{background:#5a2a08;color:#ffb36b} .tag.closed{background:#4a1a2a;color:#ff9ab0}
+  .claim{display:flex;align-items:center;gap:8px;background:#22244a;border-radius:12px;padding:8px 10px;margin-bottom:8px;font-size:12.5px;line-height:1.35}
+  .claim button{background:var(--cyan);padding:9px 10px;font-size:13px;white-space:nowrap}
+  .claim div{flex:1}
+  .who{display:flex;align-items:center;gap:8px;background:#22244a;border-radius:12px;padding:6px 8px;margin-bottom:6px;flex-wrap:wrap}
+  .av{font-size:20px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:#2f3263;border-radius:50%;flex:none}
+  .who .nm{flex:1 1 120px;min-width:0}
+  .who .nm b{display:block;font-size:14px}
+  .who .nm span{font-size:11.5px;color:var(--muted)}
+  .acts{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+  .acts button{font-size:12px;padding:7px 8px;white-space:nowrap;border-radius:10px;background:var(--amber)}
+  .acts button.d{background:var(--green)} .acts button.s{background:#c9a7ff}
+  .leave{width:100%;margin-top:2px;padding:9px;font-size:14px;background:#2f3263;color:var(--ink)}
+  #act{text-align:center;padding:6px 0}
+  #act .emo{font-size:44px;animation:wob 1s infinite;display:inline-block}
+  @keyframes wob{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+  #act .t{font-family:Bungee;font-size:26px;color:var(--amber);margin:4px 0}
+  #act .pb{height:12px;background:#2a2c55;border-radius:8px;overflow:hidden;margin:8px 0}
+  #act .pb i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--amber),var(--pink))}
+  #act .quip{font-size:14px;min-height:38px;color:#e6e3ff}
+  .trap h3{color:var(--xa)!important}
+  .trap p{font-size:15px;line-height:1.45;margin:8px 0}
+  .row{display:flex;gap:8px}
+  .row button{flex:1;padding:12px;font-size:14px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="clock" class="pill"><span id="clk">17:00</span><small>vendredi</small></div>
+  <div id="gauges" class="pill">
+    <div class="g"><span>🍺 Toi</span><div class="bar"><i id="meF"></i><em class="coma"></em></div><b id="meV">0.00</b></div>
+    <div class="g"><span>🦜 XA</span><div class="bar"><i id="xaF"></i></div><b id="xaV">0.00</b></div>
+    <div class="g"><span>🏴 Bars</span><div class="bar" style="display:flex"><i id="barMe" style="background:var(--cyan)"></i><i style="flex:1"></i><i id="barXa" style="background:var(--xa)"></i></div><b id="barV">0–0</b></div>
+  </div>
+  <div id="score" class="pill"><small style="font-size:9px;color:var(--muted)">points</small><span class="me" id="scMe">0</span><span class="xa" id="scXa">0</span></div>
+</div>
+
+<div id="bottom" class="hidden">
+  <div id="ticker"></div>
+  <button id="pause">⏸</button>
+</div>
+
+<div id="sheet" class="hidden"></div>
+
+<div id="start" class="overlay">
+  <div class="card">
+    <h1>Tournée Générale<small>★ VICHY ★</small></h1>
+    <p class="sub">Vendredi, 17h, gare de Vichy. Toi contre <b style="color:var(--xa)">XA</b> jusqu'à la fermeture du Passage Club.</p>
+    <div class="rules">
+      <b>La course contre XA</b>
+      <ul>
+        <li>🏴 <b>Bar libre</b> : arrive avant XA et sois <b>plus sous que lui</b> pour planter ton drapeau. 100 pts par bar, 200 pour le Passage Club.</li>
+        <li>⚔️ <b>Bar de XA</b> : défie-le au <b>chifoumi</b> (une manche) pour le reprendre. XA peut faire pareil avec les tiens.</li>
+        <li class="x">🦜 Tu croises XA ? Chifoumi. <b class="x">Le perdant boit</b> (perroquet sauvage ou Ch'tibini), le gagnant prend +50 pts.</li>
+        <li>💎 <b>All-in</b> : tous les bars à toi à 5h = <b>+500 pts</b>. Le plus de points gagne, même moins sous.</li>
+        <li>⚠️ Pas le choix : au Binche, <b>Kevin</b> (le patron) et <b>Evan</b> te servent quand ça leur chante (attention à l'<b>Armageddon</b>, +1 g d'un coup). <b>Emilien</b> à l'Imprévu, <b>Pong</b> et son beer-pong, <b>Quentin</b> au Lapin : pareil.</li>
+        <li>🎲 Au choix : quinito avec <b>Vico</b> ou <b>Arbur</b> (x2), 🎯 <b>Derok</b> (10 min), fléchettes avec un lambda (1 h, tu dessaoules).</li>
+        <li>💔 3 ex et des punks à chiens traînent en ville. XA a sa <b>XA-mobile</b> : personne ne sait où il va freiner.</li>
+        <li>Vrais horaires d'ouverture. 3,2 g/L = urgences.</li>
+      </ul>
+    </div>
+    <button class="big" id="go">C'est parti</button>
+    <div id="best"></div>
+    <div class="lb" id="lbStart"><h4>🏆 Classement</h4><div class="msg">Chargement…</div></div>
+    <p class="fine">Positions GPS des bars et tracé des grandes rues issus d'OpenStreetMap et d'annuaires (PagesJaunes, Vichy mon amour…). Horaires d'un vendredi. Personnages et situations fictifs. À consommer avec modération 🙃</p>
+  </div>
+</div>
+
+<div id="end" class="overlay hidden">
+  <div class="card">
+    <h2 id="endtitle">Fermeture !</h2>
+    <p class="sub" id="endsub"></p>
+    <div class="vs" id="endvs"></div>
+    <div class="stats" id="endstats"></div>
+    <div class="save" id="saveBox"><input id="pname" maxlength="16" placeholder="Ton prénom" autocomplete="off"><button id="saveBtn">Enregistrer</button></div>
+    <div class="lb" id="lbEnd"><h4>🏆 Classement</h4><div class="msg">Chargement…</div></div>
+    <button class="big" id="again">Une dernière ?</button>
+  </div>
+</div>
+
+<div id="paused" class="overlay hidden">
+  <div class="card">
+    <h1 style="font-size:28px">Pause pipi<small>l'horloge est arrêtée</small></h1>
+    <div class="row" style="margin-top:16px"><button class="big" id="resume">Reprendre</button><button class="big" id="quit" style="background:#2f3263;color:#fff">Quitter</button></div>
+  </div>
+</div>
+
+<script>
+(()=>{
+// ================= DONNÉES =================
+const STREETS={"Rue de Paris":[[[46.12691,3.42977],[46.12689,3.42963]],[[46.12666,3.42782],[46.12662,3.42748],[46.12658,3.42722],[46.12655,3.42691],[46.12654,3.42684],[46.12651,3.42659],[46.12649,3.42646],[46.12648,3.42639],[46.12644,3.42605],[46.12643,3.42598],[46.12639,3.42565],[46.12638,3.42556],[46.12637,3.42552],[46.12626,3.42465],[46.12624,3.42443],[46.12622,3.42431],[46.12615,3.42372],[46.12614,3.42368],[46.12613,3.42356],[46.12609,3.42322],[46.12604,3.42285],[46.12602,3.42273]],[[46.12667,3.42792],[46.12666,3.42782]],[[46.12675,3.42854],[46.12674,3.42843],[46.12671,3.42821]],[[46.12671,3.42821],[46.12668,3.42802]],[[46.12686,3.42943],[46.12675,3.42854]],[[46.12689,3.42963],[46.12688,3.42957],[46.12686,3.42943]],[[46.12668,3.42802],[46.12667,3.42792]]],"Rue des Bartins":[[[46.13653,3.43086],[46.13652,3.43101],[46.13652,3.43113]],[[46.13675,3.42368],[46.13678,3.42337],[46.1368,3.42306],[46.13681,3.42296]],[[46.13675,3.42299],[46.13674,3.42306],[46.13673,3.42341],[46.13675,3.42368]],[[46.13675,3.42368],[46.13672,3.42431],[46.13671,3.42472],[46.1367,3.4248],[46.1367,3.42483],[46.13669,3.425],[46.13669,3.42502],[46.13668,3.42544],[46.13664,3.42644],[46.13663,3.42658],[46.13662,3.427],[46.13661,3.42742],[46.13658,3.42832],[46.13657,3.42863],[46.13656,3.42921],[46.13655,3.42932],[46.13653,3.43086]]],"Rue Jean Jaurès":[[[46.13332,3.42331],[46.13309,3.42334]],[[46.13309,3.42334],[46.13306,3.42334],[46.13302,3.42334],[46.13224,3.42341]],[[46.1275,3.42297],[46.12745,3.42296],[46.12615,3.42273],[46.12602,3.42273]],[[46.13617,3.42277],[46.13603,3.42273],[46.13586,3.42269],[46.13581,3.42267],[46.13555,3.4226],[46.13531,3.42259]],[[46.12995,3.42358],[46.13003,3.42366]],[[46.13005,3.42356],[46.12995,3.42358]],[[46.12921,3.42337],[46.12876,3.42324],[46.12871,3.42323],[46.12841,3.42314],[46.12814,3.42307]],[[46.13224,3.42341],[46.13216,3.42341],[46.13157,3.42346],[46.13153,3.42346],[46.13102,3.4235],[46.13059,3.42352],[46.13045,3.42355]],[[46.13642,3.42285],[46.13654,3.42293],[46.13666,3.42296],[46.13675,3.42299],[46.13677,3.42298],[46.13681,3.42296]],[[46.13642,3.42285],[46.13617,3.42277]],[[46.13045,3.42355],[46.13028,3.42356],[46.13018,3.42356]],[[46.1302,3.42366],[46.13028,3.42363],[46.13045,3.42355]],[[46.13681,3.42296],[46.13678,3.42293],[46.13676,3.42291],[46.13667,3.42288],[46.13656,3.42286],[46.13642,3.42285]],[[46.13516,3.42261],[46.13501,3.42265],[46.13465,3.42281],[46.13452,3.42288],[46.13445,3.42291],[46.13419,3.42303],[46.13409,3.42307],[46.13389,3.42316],[46.13375,3.42321],[46.13361,3.42325],[46.13357,3.42326],[46.13347,3.42328],[46.13332,3.42331]],[[46.12995,3.42358],[46.12975,3.42352],[46.12962,3.42349],[46.12921,3.42337]],[[46.12814,3.42307],[46.12764,3.42293],[46.12755,3.42294],[46.1275,3.42297]],[[46.13528,3.42259],[46.13516,3.42261]],[[46.13531,3.42259],[46.13528,3.42259]]],"Rue Georges Clemenceau":[[[46.12349,3.42235],[46.1233,3.42232],[46.12329,3.42232],[46.12327,3.42231],[46.12311,3.42228]],[[46.12602,3.42273],[46.12588,3.42271],[46.12574,3.42269],[46.12563,3.42268],[46.12556,3.42267],[46.1253,3.42263],[46.12509,3.4226],[46.12449,3.42252],[46.12411,3.42245],[46.12386,3.42241],[46.1238,3.4224],[46.12352,3.42235]],[[46.12352,3.42235],[46.12349,3.42235]]],"Pont de Bellerive":[[[46.11846,3.41607],[46.12012,3.41829]]],"Avenue de Vichy":[[[46.13442,3.44562],[46.13446,3.44515],[46.13447,3.44478],[46.13449,3.44433],[46.13448,3.44336],[46.13445,3.44259],[46.13445,3.44234],[46.13441,3.44185],[46.1344,3.44174],[46.13428,3.44095],[46.13408,3.44007],[46.13393,3.43962],[46.13372,3.43906],[46.13334,3.43818],[46.1333,3.43811],[46.13301,3.43753],[46.13258,3.43673],[46.13237,3.43635],[46.13222,3.43611],[46.1321,3.43598],[46.13199,3.43588],[46.13191,3.43578]],[[46.13179,3.43572],[46.13188,3.43582],[46.13194,3.43591],[46.13208,3.43603],[46.13219,3.43615],[46.13233,3.4364],[46.13254,3.43678],[46.13297,3.43757],[46.13326,3.43815],[46.13331,3.43823],[46.13367,3.43908],[46.13389,3.43963],[46.13403,3.44009],[46.13423,3.44097],[46.13429,3.4413],[46.13435,3.44175],[46.13435,3.44185],[46.1344,3.44259],[46.13444,3.44336],[46.13444,3.44432],[46.13441,3.44506]]],"Rue de Beauséjour":[[[46.13799,3.41892],[46.13798,3.41903],[46.13796,3.41913],[46.13793,3.41925],[46.13791,3.41927],[46.13783,3.41939],[46.13768,3.41962],[46.13752,3.41987],[46.13732,3.42024],[46.13726,3.42039],[46.13722,3.42054],[46.13718,3.42077],[46.13709,3.4212],[46.13707,3.42131],[46.13688,3.42236]],[[46.13681,3.42296],[46.13682,3.42287],[46.13688,3.42236]],[[46.13688,3.42236],[46.13681,3.42259],[46.13677,3.42286],[46.13676,3.42291],[46.13676,3.42295],[46.13675,3.42299]]],"Quai d'Allier":[[[46.1289,3.41636],[46.12888,3.41627],[46.12887,3.4162]],[[46.12875,3.41616],[46.12767,3.41579]],[[46.12887,3.4162],[46.12875,3.41616]],[[46.12653,3.41545],[46.12638,3.41543]],[[46.1275,3.41574],[46.12683,3.4155],[46.12653,3.41545]],[[46.12767,3.41579],[46.12754,3.41575],[46.1275,3.41574]]],"Place de la Gare":[[[46.12714,3.42989],[46.12693,3.42994],[46.12675,3.42999]],[[46.12675,3.43005],[46.12693,3.43],[46.12715,3.42995]],[[46.12672,3.4301],[46.1268,3.43008],[46.12694,3.43004],[46.12718,3.42998]],[[46.12714,3.42984],[46.12692,3.4299],[46.12674,3.42995]]],"Boulevard de l'Hôpital":[[[46.11952,3.43545],[46.11962,3.43538],[46.11975,3.43525]],[[46.11975,3.43525],[46.11961,3.43533],[46.1195,3.43533]],[[46.11975,3.43525],[46.12018,3.43479],[46.12022,3.43475],[46.12056,3.43442],[46.12081,3.43418],[46.12101,3.43403],[46.12114,3.43395],[46.12183,3.43348]],[[46.12639,3.43287],[46.12678,3.43247],[46.12696,3.4323],[46.12717,3.43209],[46.12781,3.43164],[46.12809,3.43144],[46.12812,3.43141],[46.12821,3.43135],[46.12827,3.43132]],[[46.12636,3.43292],[46.12609,3.43307],[46.12578,3.43315]],[[46.12893,3.43105],[46.12882,3.43104],[46.12879,3.43107],[46.12876,3.4311],[46.12869,3.43116]],[[46.12471,3.43301],[46.12505,3.43318],[46.12517,3.4332],[46.12524,3.43321],[46.12544,3.4332],[46.12578,3.43315]],[[46.12827,3.43132],[46.12842,3.43131],[46.12862,3.43127],[46.1288,3.4312],[46.12889,3.4312]],[[46.12323,3.4326],[46.12339,3.43254],[46.1236,3.43253],[46.12378,3.43255],[46.12407,3.43264]],[[46.12407,3.43264],[46.1244,3.43283],[46.12443,3.43286],[46.12471,3.43301]],[[46.12407,3.43264],[46.12393,3.43255]],[[46.12393,3.43255],[46.12375,3.43248],[46.12353,3.43246],[46.12338,3.43248],[46.12329,3.43251],[46.12323,3.43254],[46.12302,3.4327]],[[46.12183,3.43348],[46.12205,3.43335],[46.12269,3.43292],[46.12302,3.4327]],[[46.12869,3.43116],[46.12841,3.43124],[46.12827,3.43132]],[[46.12302,3.4327],[46.12306,3.43268],[46.12323,3.4326]],[[46.12636,3.43292],[46.12637,3.4329],[46.12639,3.43287]]],"Boulevard Gambetta":[[[46.12821,3.42755],[46.12815,3.42769],[46.12812,3.42776],[46.12809,3.42781],[46.12807,3.42785]],[[46.12745,3.42925],[46.12725,3.42968],[46.12719,3.42977]],[[46.13003,3.42367],[46.12998,3.42376],[46.12982,3.42413],[46.12976,3.42434]],[[46.12976,3.42434],[46.12984,3.42423],[46.12987,3.42417],[46.13003,3.4238],[46.13006,3.42373]],[[46.12728,3.42982],[46.1273,3.42973],[46.12739,3.42954],[46.12744,3.42942]],[[46.12757,3.42892],[46.12749,3.42913],[46.12745,3.42925]],[[46.12905,3.42577],[46.1288,3.42628],[46.12861,3.42666],[46.12858,3.42672]],[[46.12976,3.42434],[46.12914,3.4256]],[[46.12807,3.42785],[46.12786,3.42831],[46.1276,3.42886],[46.12757,3.42892]],[[46.12858,3.42672],[46.12855,3.4268],[46.12837,3.42719],[46.12821,3.42755]],[[46.12914,3.4256],[46.1291,3.42568],[46.12907,3.42575],[46.12905,3.42577]]],"Avenue des Célestins":[[[46.12078,3.42652],[46.12096,3.42666],[46.12123,3.4269],[46.12142,3.42708],[46.12154,3.42718],[46.12194,3.42751],[46.12224,3.42776],[46.12245,3.42792],[46.12252,3.42799],[46.12261,3.42807]],[[46.11881,3.42505],[46.11892,3.42516],[46.11904,3.42527],[46.11913,3.42535],[46.11921,3.42539],[46.11938,3.42545],[46.11959,3.42556],[46.11974,3.42565],[46.11984,3.42572],[46.11991,3.42578],[46.1207,3.42645],[46.12078,3.42652]],[[46.12546,3.43029],[46.12554,3.43031],[46.12563,3.43031],[46.12574,3.43031]],[[46.12661,3.43001],[46.12654,3.43013]],[[46.12654,3.43013],[46.12664,3.4301]],[[46.12446,3.42964],[46.12454,3.4297],[46.1246,3.42975],[46.12487,3.42998],[46.12503,3.4301],[46.12513,3.43017],[46.12521,3.43021],[46.12529,3.43024],[46.12537,3.43027],[46.12546,3.43029]],[[46.12261,3.42807],[46.12271,3.42815],[46.12276,3.42819],[46.12335,3.42869],[46.12339,3.42873],[46.12349,3.42881],[46.1238,3.42907],[46.12385,3.42911],[46.12414,3.42936],[46.12423,3.42944],[46.12442,3.4296],[46.12446,3.42964]],[[46.12574,3.43031],[46.12581,3.4303],[46.1264,3.43016],[46.12654,3.43013]]],"Avenue de Gramont":[[[46.12745,3.42925],[46.12742,3.42914],[46.12734,3.42904],[46.12714,3.42877],[46.12697,3.42856],[46.12691,3.42848]],[[46.12816,3.43023],[46.12785,3.42982]],[[46.12785,3.42982],[46.12759,3.42946],[46.12745,3.42925]],[[46.12851,3.43067],[46.12816,3.43023]],[[46.12941,3.43168],[46.12939,3.4316],[46.12915,3.43131],[46.12904,3.43116],[46.12893,3.43105],[46.12872,3.43085],[46.12851,3.43067]],[[46.12781,3.42988],[46.12809,3.43026]],[[46.12889,3.4312],[46.12897,3.4313],[46.12924,3.43163]],[[46.12809,3.43026],[46.12847,3.43073]],[[46.12869,3.43096],[46.12879,3.43107],[46.12889,3.4312]],[[46.12941,3.43168],[46.1299,3.43233],[46.13014,3.43265],[46.13023,3.43277],[46.13032,3.4329],[46.13044,3.43307],[46.1305,3.43316]],[[46.12745,3.42925],[46.12753,3.42926],[46.12806,3.42991]],[[46.1305,3.43316],[46.13056,3.43325],[46.13067,3.43343],[46.13083,3.43369],[46.13096,3.43392],[46.13126,3.43443],[46.13143,3.43474]],[[46.12744,3.42942],[46.12758,3.42963],[46.12773,3.42977],[46.12781,3.42988]],[[46.12924,3.43163],[46.12941,3.43168]],[[46.13143,3.43474],[46.13155,3.43501],[46.13161,3.43514],[46.13165,3.43522],[46.13175,3.43553],[46.13177,3.43565]],[[46.13179,3.43551],[46.13172,3.43525],[46.13164,3.43508],[46.13158,3.43498],[46.13143,3.43474]],[[46.12806,3.42991],[46.12837,3.43032]],[[46.12691,3.42848],[46.12685,3.4284],[46.12671,3.42821]],[[46.12847,3.43073],[46.12869,3.43096]]],"Avenue Thermale":[[[46.12641,3.41988],[46.12644,3.41988],[46.12705,3.41983],[46.1271,3.41982],[46.12752,3.41977],[46.12761,3.41976],[46.12767,3.41976]],[[46.12767,3.41976],[46.12781,3.41975],[46.12783,3.41975],[46.12797,3.41973],[46.12854,3.41968],[46.12861,3.41968],[46.12935,3.41961],[46.13026,3.41953],[46.13034,3.41952]],[[46.13254,3.4193],[46.13243,3.41921],[46.13228,3.41922],[46.13217,3.41933]],[[46.13254,3.4193],[46.13271,3.41928],[46.13355,3.41919]],[[46.13217,3.41933],[46.13229,3.41943],[46.13243,3.41941],[46.13254,3.4193]],[[46.13355,3.41919],[46.13395,3.41915]],[[46.13395,3.41915],[46.13418,3.41913],[46.13448,3.4191],[46.13453,3.4191],[46.13511,3.41904],[46.13516,3.41904],[46.13521,3.41903],[46.13618,3.41894],[46.13626,3.41893],[46.13696,3.41886],[46.13703,3.41886]],[[46.13034,3.41952],[46.13041,3.41951],[46.13199,3.41935]],[[46.13199,3.41935],[46.13217,3.41933]]],"Allée des Ailes":[[[46.13731,3.41567],[46.13694,3.41572],[46.13656,3.41577],[46.13641,3.41578],[46.13631,3.41576],[46.1362,3.41571]],[[46.13616,3.4159],[46.13636,3.41593],[46.13695,3.41585],[46.1373,3.4158]]]};
+// Horaires d'un vendredi (h décimales, >24 = après minuit)
+const BARS=[
+  {id:"binche",  n:"Le Binche",      a:"7 passage du Commerce",            k:"nuit", lat:46.12589,lon:3.42373, o:17.5, c:24},
+  {id:"passage", n:"Le Passage Club",a:"19 passage du Commerce",           k:"club", lat:46.12568,lon:3.42377, o:24,   c:29},
+  {id:"pub",     n:"The Pub",        a:"24 place Charles-de-Gaulle",       k:"nuit", lat:46.12490,lon:3.42585, o:18,   c:26},
+  {id:"imprevu", n:"L'Imprévu",      a:"5 place de la Gare",               k:"nuit", lat:46.12672,lon:3.42975, o:18,   c:25},
+  {id:"arrosoir",n:"L'Arrosoir",     a:"99 av. des Célestins",             k:"nuit", lat:46.12575,lon:3.43018, o:20,   c:26},
+  {id:"lapin",   n:"Le Lapin",       a:"16 galerie Source-de-l'Hôpital",   k:"nuit", lat:46.12262,lon:3.42135, o:18.5, c:26},
+  {id:"owl",     n:"The Night Owl",  a:"7 pl. Source-de-l'Hôpital",        k:"nuit", lat:46.12228,lon:3.42152, o:18,   c:25},
+  {id:"balto",   n:"Le Balto",       a:"98 rue Jean-Jaurès",               k:"pmu",  lat:46.12975,lon:3.42372, o:5.75, c:19.25},
+  {id:"dome",    n:"Le Dôme",        a:"52 bd Gambetta, face gare",        k:"pmu",  lat:46.12738,lon:3.42935, o:10,   c:25},
+];
+const PARKS=[
+  {n:"Parc des Sources",p:[[46.12585,3.42055],[46.12585,3.42255],[46.12290,3.42250],[46.12275,3.42060]]},
+  {n:"Parcs d'Allier",p:[[46.13400,3.41575],[46.13400,3.41860],[46.12650,3.41880],[46.12500,3.41930],[46.12100,3.41900],[46.11900,3.41850],[46.11950,3.41650],[46.12500,3.41560]]},
+];
+const RIVER=[[46.1360,3.4118],[46.1300,3.4120],[46.1265,3.4127],[46.1230,3.4140],[46.1193,3.4170],[46.1150,3.4205]];
+const LANDMARKS=[
+  {n:"🚉 Gare",lat:46.12700,lon:3.43075},
+  {n:"🎭 Opéra",lat:46.12323,lon:3.41946},
+  {n:"⛲ Hall des Sources",lat:46.12560,lon:3.42150},
+  {n:"✉️ La Poste",lat:46.12515,lon:3.42640},
+  {n:"Quatre-Chemins",lat:46.12620,lon:3.42290},
+  {n:"Vieux Vichy",lat:46.12170,lon:3.42390},
+  {n:"L'Allier",lat:46.12450,lon:3.41330,big:1},
+];
+const HALL={lat:46.12560,lon:3.42150};
+
+// ================= PROJECTION MÉTRIQUE =================
+const LAT0=46.1262, LON0=3.4255, MLAT=111195, MLON=111195*Math.cos(LAT0*Math.PI/180);
+const toM=(lat,lon)=>[(lon-LON0)*MLON,(LAT0-lat)*MLAT]; // x est, y sud (mètres)
+const bxs=BARS.map(b=>toM(b.lat,b.lon));
+const BB={x0:Math.min(...bxs.map(p=>p[0]))-120,x1:Math.max(...bxs.map(p=>p[0]))+120,y0:Math.min(...bxs.map(p=>p[1]))-120,y1:Math.max(...bxs.map(p=>p[1]))+150};
+
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+let W,H,DPR,M={},SC=1,OX=0,OY=0,bg=null,sheetH=0;
+function layout(){
+  DPR=Math.min(2,devicePixelRatio||1); W=innerWidth; H=innerHeight; cv.width=W*DPR; cv.height=H*DPR;
+  const top=66, bot=sheetH?sheetH+4:60;
+  M={x:6,y:top,w:W-12,h:Math.max(120,H-top-bot)};
+  const bw=BB.x1-BB.x0, bh=BB.y1-BB.y0;
+  SC=Math.min(M.w/bw,M.h/bh);
+  OX=M.x+M.w/2-(BB.x0+bw/2)*SC; OY=M.y+M.h/2-(BB.y0+bh/2)*SC;
+  placeCallouts(); drawBg();
+}
+const S=(m)=>[OX+m[0]*SC, OY+m[1]*SC];
+const G=(lat,lon)=>S(toM(lat,lon));
+const R=()=>Math.max(15,Math.min(24,W*0.045));
+
+// bulles (callouts) : position réelle = point, bulle décalée pour la lisibilité
+function placeCallouts(){
+  const r=R(), pts=BARS.map(b=>{const a=G(b.lat,b.lon);return {a,p:[a[0],a[1]-r*1.6]};});
+  for(let it=0;it<300;it++){
+    for(let i=0;i<pts.length;i++){
+      const q=pts[i];
+      q.p[0]+=(q.a[0]-q.p[0])*0.02; q.p[1]+=(q.a[1]-r*1.6-q.p[1])*0.02;
+      for(let j=0;j<pts.length;j++){ if(i===j) continue; const o=pts[j];
+        const dx=q.p[0]-o.p[0], dy=q.p[1]-o.p[1], d=Math.hypot(dx,dy)||0.01, m=r*2.9;
+        if(d<m){ const f=(m-d)/2/d; q.p[0]+=dx*f; q.p[1]+=dy*f; } }
+      q.p[0]=Math.max(M.x+r*2.6,Math.min(M.x+M.w-r*2.6,q.p[0])); q.p[1]=Math.max(M.y+r*1.1,Math.min(M.y+M.h-r*1.8,q.p[1]));
+    }
+  }
+  BARS.forEach((b,i)=>{b.anchor=pts[i].a; b.bub=pts[i].p;});
+}
+
+function drawBg(){
+  bg=document.createElement('canvas'); bg.width=W*DPR; bg.height=H*DPR;
+  const b=bg.getContext('2d'); b.scale(DPR,DPR);
+  b.fillStyle='#12132a'; b.fillRect(0,0,W,H);
+  b.save(); rr(b,M.x,M.y,M.w,M.h,18); b.fillStyle='#1a1c38'; b.fill(); b.clip();
+  // îlots urbains suggérés
+  b.strokeStyle='#1f2245'; b.lineWidth=1;
+  for(let x=-2000;x<2000;x+=45){ b.beginPath(); const p1=S([x,-2000]),p2=S([x+400,2000]); b.moveTo(p1[0],p1[1]); b.lineTo(p2[0],p2[1]); b.stroke(); }
+  // parcs
+  for(const p of PARKS){ b.beginPath(); p.p.forEach((q,i)=>{const s=G(q[0],q[1]); i?b.lineTo(s[0],s[1]):b.moveTo(s[0],s[1]);}); b.closePath(); b.fillStyle='#163b30'; b.fill(); b.strokeStyle='#1f5242'; b.lineWidth=1.5; b.stroke(); }
+  // arbres
+  let seed=3; const rnd0=()=>((seed=(seed*9301+49297)%233280)/233280);
+  for(const p of PARKS){ const xs=p.p.map(q=>G(q[0],q[1])); const mnx=Math.min(...xs.map(a=>a[0])),mxx=Math.max(...xs.map(a=>a[0])),mny=Math.min(...xs.map(a=>a[1])),mxy=Math.max(...xs.map(a=>a[1]));
+    b.beginPath(); xs.forEach((s,i)=>i?b.lineTo(s[0],s[1]):b.moveTo(s[0],s[1])); b.closePath();
+    for(let k=0;k<160;k++){ const x=mnx+rnd0()*(mxx-mnx), y=mny+rnd0()*(mxy-mny); if(b.isPointInPath(x*DPR,y*DPR)){ b.fillStyle='#1d5a44'; b.beginPath(); b.arc(x,y,Math.max(1.5,SC*5),0,7); } b.fill(); } }
+  // rivière
+  b.lineCap='round'; b.lineJoin='round';
+  const rv=RIVER.map(q=>G(q[0],q[1]));
+  b.strokeStyle='#173d6e'; b.lineWidth=SC*330; poly(b,rv); b.stroke();
+  b.strokeStyle='#1e4f8c'; b.lineWidth=SC*260; poly(b,rv); b.stroke();
+  // rues réelles (OSM)
+  const names=Object.keys(STREETS);
+  for(const n of names){ for(const line of STREETS[n]){ const p=line.map(q=>G(q[0],q[1])); const br=n.startsWith('Pont');
+    b.strokeStyle=br?'#8a7f6a':'#2e3260'; b.lineWidth=Math.max(5,SC*16); poly(b,p); b.stroke();
+    b.strokeStyle=br?'#b9ab8c':'#41467f'; b.lineWidth=Math.max(2.5,SC*8); poly(b,p); b.stroke(); } }
+  // lampadaires
+  for(const n of names){ for(const line of STREETS[n]){ let lastL=null; for(let i=0;i<line.length;i++){ const s=G(line[i][0],line[i][1]); if(lastL&&Math.hypot(s[0]-lastL[0],s[1]-lastL[1])<38) continue; lastL=s; b.fillStyle='#ffd77a'; b.globalAlpha=.18; b.beginPath(); b.arc(s[0],s[1],Math.max(4,SC*14),0,7); b.fill(); b.globalAlpha=.8; b.beginPath(); b.arc(s[0],s[1],1.2,0,7); b.fill(); b.globalAlpha=1; } } }
+  // noms des rues
+  b.font=`600 ${Math.max(9,Math.min(12,W*0.026))}px Rubik`; b.textAlign='center'; b.textBaseline='middle';
+  for(const n of names){ if(n.startsWith('Pont')) continue; let best=null,bl=0;
+    for(const line of STREETS[n]) for(let i=0;i<line.length-1;i++){ const a=G(line[i][0],line[i][1]), c=G(line[i+1][0],line[i+1][1]); const l=Math.hypot(c[0]-a[0],c[1]-a[1]); const mid=[(a[0]+c[0])/2,(a[1]+c[1])/2];
+      if(l>bl&&mid[0]>M.x+30&&mid[0]<M.x+M.w-30&&mid[1]>M.y+20&&mid[1]<M.y+M.h-20){bl=l;best=[a,c];} }
+    if(!best||bl<40) continue; let ang=Math.atan2(best[1][1]-best[0][1],best[1][0]-best[0][0]); if(ang>Math.PI/2)ang-=Math.PI; if(ang<-Math.PI/2)ang+=Math.PI;
+    b.save(); b.translate((best[0][0]+best[1][0])/2,(best[0][1]+best[1][1])/2); b.rotate(ang); b.fillStyle='#7a7fbf'; b.fillText(n.replace('Boulevard','Bd').replace('Avenue','Av.'),0,-Math.max(7,SC*14)); b.restore(); }
+  // repères
+  for(const l of LANDMARKS){ const s=G(l.lat,l.lon); if(!l.big&&(s[0]<M.x+40||s[0]>M.x+M.w-40||s[1]<M.y+10||s[1]>M.y+M.h-10)) continue; b.font=`${l.big?'italic 800':'600'} ${l.big?14:10.5}px Rubik`; b.fillStyle=l.big?'#5f93d6':'#8b90c8'; b.save(); b.translate(s[0],s[1]); if(l.big) b.rotate(-1.35); b.fillText(l.n,0,0); b.restore(); }
+  b.fillStyle='#3f8f6c'; b.font='600 10.5px Rubik'; { const s=G(46.1243,3.4216); b.save(); b.translate(s[0],s[1]); b.rotate(-1.5); b.fillText('Parc des Sources',0,0); b.restore(); }
+  b.restore();
+  rr(b,M.x,M.y,M.w,M.h,18); b.strokeStyle='#2f3263'; b.lineWidth=2; b.stroke();
+  // échelle 100 m
+  const L=100*SC; b.strokeStyle='#8b90c8'; b.lineWidth=2; b.beginPath(); b.moveTo(M.x+12,M.y+M.h-12); b.lineTo(M.x+12+L,M.y+M.h-12); b.stroke(); b.fillStyle='#8b90c8'; b.font='600 10px Rubik'; b.textAlign='left'; b.fillText('100 m',M.x+16+L,M.y+M.h-12);
+  b.textAlign='right'; b.font='12px Bungee'; b.fillText('N ↑',M.x+M.w-10,M.y+14);
+}
+function poly(b,p){b.beginPath(); p.forEach((q,i)=>i?b.lineTo(q[0],q[1]):b.moveTo(q[0],q[1]));}
+function rr(b,x,y,w,h,r){b.beginPath(); b.moveTo(x+r,y); b.arcTo(x+w,y,x+w,y+h,r); b.arcTo(x+w,y+h,x,y+h,r); b.arcTo(x,y+h,x,y,r); b.arcTo(x,y,x+w,y,r); b.closePath();}
+
+// ================= PERSONNAGES & ACTIVITÉS =================
+// dur en minutes de jeu, alc en g/L
+const LAMB=[["Jean-Mi","🧓"],["Sandrine","👩‍🦰"],["Le grand Thierry","🧍"],["Momo","👨"],["Josiane","👵"],["Dédé","👴"],["Jessica","💁‍♀️"],["Un mec en survêt","🏃"],["Nadine","👩"],["Un Anglais perdu","💂"],["Steph","🧑‍🦱"],["Bébert","👨‍🦳"],["Lulu","🙋‍♀️"],["Un turfiste","🏇"]];
+const ACT={
+  pinte:{l:"🍺 Une pinte",dur:10,alc:0.25,q:["Le patron te sert sans un mot","Mousse parfaite","« Une autre ? »"]},
+  quinito:{l:"🎲 Quinito",dur:30,alc:0.35,q:["« Quinito ! »","Les dés roulent sur le zinc…","« Cul sec le perdant »","« T'as triché là, non ? »"]},
+  quinitoX2:{l:"🎲 Quinito (x2)",dur:30,alc:0.7,q:["Il commande la même. Encore.","« Allez, on suit le rythme ! »","Tu bois deux fois plus vite que d'habitude","« Quinito ! » … et cul sec"]},
+  derok:{l:"🎯 Fléchettes",dur:10,alc:0.1,cls:"d",q:["Derok : triple 20, triple 20, triple 20","« C'est plié, gamin »","Derok ne regarde même pas la cible"]},
+  dartsL:{l:"🎯 Fléchettes",dur:60,alc:-0.5,cls:"d",sober:1,q:["Ça part à côté…","Il recompte les points. Encore.","« Attends, je reprends mes fléchettes »","Un verre d'eau entre deux lancers","Ça te remet les idées en place"]},
+  tierce:{l:"🏇 Tiercé au comptoir",dur:15,alc:0.15,q:["Le 7 est parti trop vite","Le turfiste t'explique sa martingale","Un petit blanc en attendant l'arrivée"]},
+  drague:{l:"💃 Draguer (tu payes un verre)",dur:20,alc:0.3,cls:"s",q:["Tu payes un verre…","Elle sourit. Ou elle rit de toi ?","« Merci pour le verre ! » Et elle repart"]},
+  copains:{l:"🙌 Les copains",dur:30,alc:0.6,cls:"s",q:["Tu tombes sur TOUS les copains","Tournée générale, pas la peine de discuter","Même ceux que t'avais pas vus depuis le lycée"]},
+  wali:{l:"🕺 Danser",dur:30,alc:0.05,cls:"s",q:["Wali walou.","Rien ne se passe.","Toujours rien. Wali walou."]},
+};
+// pièges : ça te tombe dessus, pas le choix
+const TRAP={
+  kevin:{who:"Kevin",e:"🧢",l:"Tournée de chtibidi du patron",dur:20,alc:0.6,intro:"Kevin, le patron, lève la main vers le comptoir : « Chtibidi pour tout le monde ! »",q:["« Chtibidi ! Chtibidi ! »","Kevin en remet une. Évidemment.","Tout le Binche trinque"]},
+  evan:{who:"Evan",e:"🍹",l:"Cocktail maison d'Evan (x2)",dur:30,alc:0.7,intro:"Evan pose un verre devant toi : « Goûte mon cocktail maison. » Ça descend deux fois plus vite.",q:["« Alors, il est bon ? »","Personne ne sait ce qu'il y a dedans","Evan t'en ressert un"]},
+  armageddon:{who:"Evan",e:"☢️",l:"ARMAGEDDON",dur:5,alc:1.0,intro:"Evan sort la bouteille interdite. « Armageddon. » Le bar se tait. +1 g d'un coup.",q:["…","Tu ne sens plus tes dents","ARMAGEDDON"]},
+  emilien:{who:"Emilien",e:"🍸",l:"Show cocktail d'Emilien",dur:30,alc:0.7,intro:"Emilien, le barman, lance son show : shaker qui vole, flammes… Tu restes, et t'en bois deux.",q:["Le shaker vole par-dessus son épaule","Flambage au comptoir, la salle applaudit","…et tu bois le deuxième"]},
+  pong:{who:"Pong",e:"🏓",l:"Beer-pong avec Pong",dur:20,alc:0.5,intro:"Pong te tombe dessus. Pong, c'est beer-pong. Tu bois, tu discutes pas.",q:["Pong ne rate jamais","Balle dans le gobelet. Tu bois.","« Re-rack ! »","Pong fait sa danse de la victoire"]},
+  quentin:{who:"Quentin",e:"🍷",l:"Verre avec Quentin",dur:20,alc:0.45,intro:"Quentin t'a repéré : « Viens, goûte celui-là. » Tu bois.",q:["« Goûte celui-là »","Quentin te ressert","On refait le monde"]},
+};
+function setupPeople(){
+  const lam=LAMB.slice().sort(()=>Math.random()-0.5);
+  const L=(acts)=>{const x=lam.pop()||["Un lambda","🙂"];return {n:x[0],e:x[1],d:"Un lambda",acts};};
+  return {
+    binche:[{n:"Kevin",e:"🧢",d:"Le patron. Il sert quand il veut",trap:"kevin"},{n:"Evan",e:"🍹",d:"Cocktail maison… ou Armageddon",trap:"evan"},
+            {n:"Vico",e:"🍻",d:"Boit deux fois plus vite que toi",acts:["quinitoX2"]},{n:"Arbur",e:"🧔",d:"Pareil que Vico, en plus barbu",acts:["quinitoX2"]},{n:"Derok",e:"🎯",d:"10 min aux fléchettes",acts:["derok"]}],
+    pub:[{n:"Pong",e:"🏓",d:"Pong = beer-pong. Tu bois, point.",trap:"pong"},L(["dartsL"]),L(["quinito"])],
+    imprevu:[{n:"Emilien",e:"🍸",d:"Le barman. Son show te tombe dessus",trap:"emilien"},L(["quinito"])],
+    arrosoir:[L(["dartsL","quinito"]),L(["dartsL"])],
+    lapin:[{n:"Quentin",e:"🍷",d:"Avec Quentin, tu bois",trap:"quentin"},L(["quinito"])],
+    owl:[L(["quinito"])],
+    balto:[L(["tierce","quinito"])],
+    dome:[L(["quinito","tierce"])],
+    passage:[{n:"La piste",e:"🪩",d:"Boîte de night",acts:["drague","copains","wali"]}],
+  };
+}
+
+// ================= ÉTAT =================
+let Gm=null;
+const rnd=(a,b)=>a+Math.random()*(b-a), pick=a=>a[Math.floor(Math.random()*a.length)];
+const expo=m=>-Math.log(1-Math.random())*m;
+const RATE=12/480;   // heures de jeu par seconde réelle : 17h→5h en ~8 min
+const WALK=80;       // m / min de jeu
+const CAR=260;       // XA-mobile, m / min
+const COMA=3.2, ALLIN=500, WINPTS=50;
+const EXNAMES=[["Marine","💔"],["Jess","💔"],["Steph","💔"]];
+function newGame(){
+  const P=setupPeople();
+  const bars=BARS.map(b=>({...b,m:toM(b.lat,b.lon),owner:0,people:P[b.id]||[],cd:0}));
+  const gare=toM(46.12690,3.43040);
+  const startXA=pick(bars.filter(b=>b.k==='pmu'));
+  const exes=EXNAMES.map((x,i)=>({n:x[0],m:[rnd(BB.x0+60,BB.x1-60),rnd(BB.y0+60,BB.y1-60)],to:null,dr:0,ph:Math.random()*9,alc:0,cd:0,stop:0,boost:0}));
+  Gm={t:17,bars,exes,
+      me:{m:[...gare],to:null,dr:0,stop:0,boost:0,ph:0,in:null,alc:0,bonus:0,skip:new Set()},
+      xa:{m:[...startXA.m],to:null,dr:0,stop:0,boost:0,ph:0,in:startXA,stay:30,alc:0.1,bonus:0,car:null,think:0},
+      cheat:0,hunt:false,skids:[],smoke:[],events:[],fx:[],ticker:[],act:null,duel:null,queue:[],nextEv:0.2,srcCd:0,xaCd:0,
+      paused:false,over:false,
+      st:{wrong:0,punks:0,police:0,ex:0,kebab:0,duelW:0,duelL:0,maxAlc:0,traps:0,armageddon:0,steals:0,lost:0,hunted:0}};
+  log("17h, tu descends du train. XA a été vu vers "+startXA.n+"…");
+}
+function log(t){ Gm.ticker.push(t); if(Gm.ticker.length>3)Gm.ticker.shift(); document.getElementById('ticker').innerHTML=Gm.ticker.map(x=>`<div>${x}</div>`).join(''); }
+function fx(m,txt,color){Gm.fx.push({m:[...m],txt,color,t:0});}
+const isOpen=(b,t)=>t>=b.o&&t<b.c;
+const hh=t=>{const h=Math.floor(t)%24, mi=Math.floor((t%1)*60+1e-6); return `${String(h).padStart(2,'0')}h${String(mi).padStart(2,'0')}`;};
+const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+const myBars=()=>Gm.bars.filter(b=>b.owner===1).length, xaBars=()=>Gm.bars.filter(b=>b.owner===2).length;
+function addAlc(who,x){ who.alc=Math.max(0,who.alc+x); if(who===Gm.me){ Gm.st.maxAlc=Math.max(Gm.st.maxAlc,who.alc); if(who.alc>=COMA) coma(); } else who.alc=Math.min(2.6,who.alc); }
+function scores(){
+  let me=0,xa=0; for(const b of Gm.bars){ const v=b.id==="passage"?200:100; if(b.owner===1)me+=v; if(b.owner===2)xa+=v; }
+  const allMe=myBars()===Gm.bars.length, allXa=xaBars()===Gm.bars.length;
+  return {meFlags:me,xaFlags:xa,me:me+Gm.me.bonus+(allMe?ALLIN:0),xa:xa+Gm.xa.bonus+(allXa?ALLIN:0),allMe,allXa};
+}
+
+// ================= ÉVÉNEMENTS DE RUE =================
+const EVENTS=[
+  {k:"punk",e:"🐕",w:7},{k:"police",e:"👮",w:2},{k:"curiste",e:"👵",w:2,before:20},
+  {k:"kebab",e:"🥙",w:2.2},{k:"pastille",e:"🍬",w:2},{k:"pigeon",e:"🐦",w:1.2,before:21},
+];
+// coins à punks à chiens permanents (parvis de la gare, Quatre-Chemins)
+const PUNKSPOTS=[toM(46.12700,3.42940),toM(46.12615,3.42300)];
+function spawnEvent(){
+  const ok=EVENTS.filter(e=>!e.before||Gm.t<e.before);
+  const tot=ok.reduce((a,e)=>a+e.w,0); let r=Math.random()*tot, ev=ok[0]; for(const e of ok){ if((r-=e.w)<=0){ev=e;break;} }
+  let m; const me=Gm.me;
+  if(me.to&&me.to.m&&Math.random()<0.65){ const t=rnd(0.3,0.7); m=[me.m[0]+(me.to.m[0]-me.m[0])*t+rnd(-25,25), me.m[1]+(me.to.m[1]-me.m[1])*t+rnd(-25,25)]; }
+  else { const a=pick(Gm.bars), b=pick(Gm.bars.filter(x=>x!==a)); const t=rnd(0.3,0.7); m=[a.m[0]+(b.m[0]-a.m[0])*t, a.m[1]+(b.m[1]-a.m[1])*t]; }
+  for(const b of Gm.bars) if(dist(b.m,m)<35) return;
+  Gm.events.push({...ev,m,born:Gm.t});
+}
+function punkTax(m){ const me=Gm.me; me.stop=8; Gm.st.punks++; const t=pick(["« T'aurais pas une clope ? »","« Une p'tite pièce pour le chien ? »","« Eh, t'as pas 2 € ? »","« Une clope, frère, juste une »"]); fx(m,t+"\n8 min à chercher ton paquet",'#ff9a7a'); log("🐕 "+t); }
+function trigger(ev){
+  const me=Gm.me; const say=(t,c)=>{fx(ev.m,t,c); log(t.replace(/\n/g,' '));};
+  switch(ev.k){
+    case "punk": punkTax(ev.m); break;
+    case "police": if(me.alc>1.5){ me.stop=30; Gm.st.police++; addAlc(me,-0.3); say(`Souffle dans le ballon… ${me.alc.toFixed(1)} g !\n30 min de leçon de morale`,'#ff7a7a'); } else { me.stop=4; say("Contrôle : « Bonne soirée monsieur »",'#c9d3ff'); } break;
+    case "curiste": me.stop=10; say(pick(["« À mon époque la cure c'était 3 semaines »","« Vous connaissez la source Chomel ? »","Une curiste te raconte ses rhumatismes"])+"\n-10 min",'#ffb3d6'); break;
+    case "kebab": me.stop=10; addAlc(me,-0.4); Gm.st.kebab++; say("Pause kebab, ça éponge\n-0.4 g",'#ffe08a'); break;
+    case "pastille": me.boost=20; say("Pastilles de Vichy !\nJambes légères",'#b8f5ff'); break;
+    case "pigeon": me.stop=4; say("Un pigeon t'a visé. Touché.",'#ddd'); break;
+  }
+}
+
+// ================= DÉPLACEMENTS =================
+function walk(w,dtMin,v0){
+  const a=w.alc, want=Math.atan2(w.to.m[1]-w.m[1],w.to.m[0]-w.m[0]);
+  w.dr+=(Math.random()-0.5)*dtMin*(0.5+a*2.6);
+  w.dr*=1-Math.min(0.9,dtMin*(0.9/(1+a*1.4)));
+  w.dr=Math.max(-2.3,Math.min(2.3,w.dr)); w.ph+=dtMin*1.2;
+  const h=want+w.dr+Math.sin(w.ph)*a*0.3;
+  const v=v0*(1-Math.min(0.4,a*0.12))*(w.boost>0?1.6:1);
+  w.m=[w.m[0]+Math.cos(h)*v*dtMin, w.m[1]+Math.sin(h)*v*dtMin];
+  w.m[0]=Math.max(BB.x0-60,Math.min(BB.x1+60,w.m[0])); w.m[1]=Math.max(BB.y0-60,Math.min(BB.y1+60,w.m[1]));
+}
+function goTo(b){
+  const me=Gm.me; if(busy()) return;
+  if(me.in===b){ openSheet(b); return; }
+  closeSheet(); me.from=me.in||me.from; me.in=null; me.to=b; me.target=b; me.skip=new Set([me.from]);
+}
+const busy=()=>Gm.act||Gm.duel||Gm.waitFor||Gm.over;
+function arriveMe(b){
+  const me=Gm.me; me.to=null; me.m=[...b.m]; me.in=b;
+  if(me.target&&me.target!==b){ Gm.st.wrong++; fx(b.m,"Mauvais bar !",'#ffb020'); log(`🥴 Tu visais ${me.target.n}… t'as atterri à ${b.n}`); }
+  me.target=null;
+  b.trapAt=Gm.t+0.02+expo(0.1);
+  if(Gm.xa.in===b&&!Gm.xa.car) return meetXA(b);
+  openSheet(b);
+}
+
+// ================= CHIFOUMI (une manche, le perdant boit) =================
+const RPS=[["pierre","✊"],["feuille","✋"],["ciseaux","✌️"]];
+function duel(title,text,onWin,onLose){
+  if(Gm.act||Gm.duel){ Gm.queue.push(()=>duel(title,text,onWin,onLose)); return; }
+  Gm.duel={onWin,onLose};
+  showSheet(`<div class="trap"><h3>${title}</h3><p>${text}</p><div class="rps">${RPS.map((r,i)=>`<button data-r="${i}">${r[1]}<small>${r[0]}</small></button>`).join('')}</div><div class="rpsres" id="rpsres">Une seule manche. Le perdant boit.</div></div>`);
+  sheet.querySelectorAll('.rps button').forEach(bt=>bt.onclick=()=>{
+    if(!Gm.duel||Gm.duel.done) return;
+    const me=+bt.dataset.r, xa=Math.floor(Math.random()*3), res=(me-xa+3)%3; // 1 = gagné, 2 = perdu
+    const out=document.getElementById('rpsres');
+    if(res===0){ out.innerHTML=`Toi ${RPS[me][1]} · XA ${RPS[xa][1]} — <b>égalité, on rejoue !</b>`; return; }
+    Gm.duel.done=1;
+    out.innerHTML=`Toi ${RPS[me][1]} · XA ${RPS[xa][1]} — <b style="color:${res===1?'var(--cyan)':'var(--xa)'}">${res===1?'GAGNÉ ! XA boit.':'PERDU ! Tu bois.'}</b>`;
+    sheet.querySelectorAll('.rps button').forEach(x=>x.disabled=true);
+    setTimeout(()=>{ const d=Gm.duel; Gm.duel=null; if(res===1){ Gm.st.duelW++; d.onWin(); } else { Gm.st.duelL++; d.onLose(); } },1100);
+  });
+}
+const XADRINK=()=>pick([{n:"perroquet sauvage",e:"🦜"},{n:"Ch'tibini",e:"🥃"}]);
+function xaDrinks(where){ const d=XADRINK(); addAlc(Gm.xa,0.4); Gm.xa.stop=Math.max(Gm.xa.stop,15); Gm.me.bonus+=WINPTS; fx(where||Gm.xa.m,`XA boit son ${d.n} ${d.e}\n+${WINPTS} pts pour toi`,'#3ee0ff'); log(`🦜 Chifoumi gagné : XA s'enfile un ${d.n}. +${WINPTS} pts`); }
+function meDrinks(b,lead){ // le joueur perd : il boit avec XA, XA garde son avance
+  const d=XADRINK(); const gain=Math.max(WINPTS,lead||0); Gm.xa.bonus+=gain;
+  log(`🦜 Chifoumi perdu : ${d.n} pour toi. XA prend +${gain} pts`);
+  const where=b||{n:"le trottoir",m:[...Gm.me.m],street:1};
+  startAct(where,{n:"XA",e:d.e},{l:`${d.n} avec XA`,dur:20,alc:0.35,q:["XA connaît la recette par cœur","« Allez, cul sec ! »","XA rigole tout seul"]},true);
+}
+const lead=()=>Math.round(Math.max(0,(Gm.xa.alc-Gm.me.alc)*100));
+function meetXA(b){ // rencontre (bar ou rue)
+  if(Gm.xaCd>0){ if(b&&!busy()) openSheet(b); return; }
+  Gm.xaCd=40;
+  duel("🦜 Tu tombes sur XA !",b?`XA est au ${b.n}. Il sort ses mains de ses poches : chifoumi.`:"XA en pleine rue. Il sort une bouteille de nulle part : chifoumi.",
+    ()=>{ xaDrinks(b?b.m:Gm.me.m); if(b) openSheet(b); else closeSheet(); },
+    ()=>meDrinks(b,lead()));
+}
+function stealDuel(b){ // le joueur défie XA pour reprendre un bar
+  duel(`⚔️ Reprendre ${b.n}`,`Le drapeau de XA flotte ici. Tu l'appelles : chifoumi pour le bar.`,
+    ()=>{ b.owner=1; Gm.st.steals++; fx(b.m,"🏴 Bar repris !",'#3ee0ff'); log(`🏴 Tu reprends ${b.n} à XA !`); xaDrinks(b.m); openSheet(b); },
+    ()=>{ b.cd=Gm.t+0.5; meDrinks(b,0); });
+}
+function xaStealDuel(b){ // XA débarque dans un bar du joueur
+  const here=Gm.me.in===b;
+  duel(`🦜 XA attaque ${b.n} !`,here?`XA entre et pose sa main sur ton drapeau. Chifoumi pour le bar.`:`XA débarque au ${b.n} et t'appelle en visio : chifoumi pour ton drapeau.`,
+    ()=>{ fx(b.m,"🏴 Drapeau défendu !",'#3ee0ff'); log(`🛡️ Tu gardes ${b.n}`); xaDrinks(b.m); Gm.xa.stay=0; if(Gm.me.in) openSheet(Gm.me.in); else closeSheet(); },
+    ()=>{ b.owner=2; Gm.st.lost++; fx(b.m,"🦜 XA te pique le bar",'#ff7a1a'); log(`😤 XA te pique ${b.n}`);
+          if(here||Gm.me.in) meDrinks(Gm.me.in,0); else { addAlc(Gm.me,0.35); Gm.me.stop=Math.max(Gm.me.stop,8); Gm.xa.bonus+=WINPTS; log(`🥃 Tu bois cul sec à distance (+0.35 g). XA +${WINPTS} pts`); closeSheet(); } });
+}
+
+// ================= PIÈGES DES PERSONNAGES =================
+function fireTrap(b){
+  const hosts=b.people.filter(p=>p.trap); if(!hosts.length) return false;
+  const h=pick(hosts); let T=TRAP[h.trap];
+  if(h.trap==="evan"&&Math.random()<0.3){ T=TRAP.armageddon; Gm.st.armageddon++; }
+  Gm.st.traps++;
+  showSheet(`<div class="trap"><h3>${T.e} ${T.who} !</h3><p>${T.intro}</p><div class="row"><button style="background:var(--amber)" id="ta">Pas le choix…</button></div></div>`);
+  Gm.act={b,p:{n:T.who,e:T.e},A:T,t:0,qt:0,forced:1,pending:1};
+  document.getElementById('ta').onclick=()=>{ Gm.act.pending=0; renderAct(); };
+  return true;
+}
+
+// ================= XA (IA + XA-mobile) =================
+function xaThink(){
+  const xa=Gm.xa, t=Gm.t;
+  // anti-triche : si tu restes sobre exprès, XA te prend en chasse en 4x4
+  if(Gm.hunt){ xa.car={hunt:1,way:[]}; xa.to=null; return; }
+  if(t>18.3&&Math.random()<0.18){ // XA-mobile : tour de ville, arrêt surprise au frein à main
+    const tgt=pick(Gm.bars.filter(b=>isOpen(b,t+0.2)&&b!==xa.in)); if(tgt){
+      const way=[]; for(let i=0;i<3;i++) way.push([rnd(BB.x0+60,BB.x1-60),rnd(BB.y0+60,BB.y1-60)]);
+      xa.car={way,tgt,hb:0}; xa.in=null; fx(xa.m,"🚙 XA monte dans la XA-mobile","#ffb36b"); log("🚙 XA a pris la XA-mobile… personne ne sait où il va s'arrêter"); return; } }
+  const free=Gm.bars.filter(b=>b.owner===0&&isOpen(b,t+0.1)&&b!==xa.in);
+  const mine=Gm.bars.filter(b=>b.owner===1&&isOpen(b,t+0.1)&&b!==xa.in);
+  if(Math.random()<0.15||(!free.length&&!mine.length)){ xa.to={m:[rnd(BB.x0+80,BB.x1-80),rnd(BB.y0+80,BB.y1-80)],street:1}; return; }
+  let pool=free; if(mine.length&&(Math.random()<0.4||!free.length)) pool=mine;
+  pool.sort((a,b)=>dist(a.m,xa.m)-dist(b.m,xa.m)); xa.to=pick(pool.slice(0,3));
+}
+function xaArrive(b){
+  const xa=Gm.xa; xa.in=b; xa.m=[...b.m]; xa.to=null; xa.stay=rnd(25,50);
+  if(b.owner===1&&isOpen(b,Gm.t)) return xaStealDuel(b);
+  if(Gm.me.in===b) meetXA(b);
+}
+function xaUpdate(dtMin){
+  const xa=Gm.xa;
+  if(xa.car) return carUpdate(dtMin);
+  if(xa.stop>0){xa.stop-=dtMin;return;}
+  if(xa.in){
+    const b=xa.in; xa.stay-=dtMin;
+    if(isOpen(b,Gm.t)) addAlc(xa,dtMin*(0.5/60)*(Gm.t>23?1.3:1));
+    if(b.owner===0&&isOpen(b,Gm.t)&&xa.alc>Gm.me.alc&&xa.stay<20){ b.owner=2; fx(b.m,"🦜 XA plante son drapeau !",'#ff7a1a'); log(`🦜 XA a pris ${b.n} (${xa.alc.toFixed(2)} g contre tes ${Gm.me.alc.toFixed(2)} g)`); xa.stay=Math.min(xa.stay,8); }
+    if(xa.stay<=0||!isOpen(b,Gm.t)){ xa.in=null; xaThink(); }
+    return;
+  }
+  if(!xa.to) xaThink(); if(xa.car) return;
+  walk(xa,dtMin,WALK*1.05);
+  if(xa.to.street){ if(dist(xa.m,xa.to.m)<20) xa.to=null; return; }
+  for(const b of Gm.bars){ if(dist(xa.m,b.m)<16&&isOpen(b,Gm.t)){ xaArrive(b); break; } }
+}
+function carUpdate(dtMin){
+  const xa=Gm.xa, c=xa.car;
+  if(c.hb>0){ // frein à main : la voiture pivote et fume
+    c.hb-=dtMin; c.ang+=dtMin*0.35; for(let i=0;i<2;i++) Gm.smoke.push({m:[xa.m[0]+rnd(-6,6),xa.m[1]+rnd(-6,6)],t:0});
+    if(c.hb<=0){ const tgt=c.tgt; xa.car=null; fx(tgt.m,"🚙💨 FREIN À MAIN !",'#ffb36b'); log(`🚙💨 La XA-mobile pile devant ${tgt.n} !`); xaArrive(tgt); }
+    return;
+  }
+  let goal;
+  if(c.hunt){ goal=Gm.me.m; } else goal=c.way.length?c.way[0]:c.tgt.m;
+  const dx=goal[0]-xa.m[0], dy=goal[1]-xa.m[1], d=Math.hypot(dx,dy), step=CAR*dtMin;
+  const ang=Math.atan2(dy,dx); c.ang=c.ang===undefined?ang:c.ang+Math.atan2(Math.sin(ang-c.ang),Math.cos(ang-c.ang))*Math.min(1,dtMin*1.5);
+  const prev=[...xa.m];
+  if(d<=step){ xa.m=[...goal]; } else { xa.m=[xa.m[0]+dx/d*step, xa.m[1]+dy/d*step]; }
+  if(Math.random()<0.5) Gm.skids.push({a:prev,b:[...xa.m],t:0,faint:1});
+  if(c.hunt){
+    if(!Gm.hunt){ xa.car=null; log("🚙 XA lâche la poursuite… pour l'instant"); return; }
+    if(dist(xa.m,Gm.me.m)<25&&!Gm.duel&&!Gm.act){ xa.car=null; Gm.st.hunted++; Gm.hunt=false; Gm.cheat=0;
+      fx(Gm.me.m,"🚙💨 XA te coince !",'#ff7a1a');
+      duel("🚙 XA t'a coincé en 4x4 !","« Tu fais le malin à boire de l'eau ? » Chifoumi, et le perdant boit double.",
+        ()=>{ xaDrinks(Gm.me.m); closeSheet(); if(Gm.me.in) openSheet(Gm.me.in); },
+        ()=>{ Gm.xa.bonus+=WINPTS*2; startAct(Gm.me.in||{n:"le trottoir",m:[...Gm.me.m],street:1},{n:"XA",e:"🚙"},{l:"Double perroquet sauvage, servi depuis le 4x4",dur:20,alc:0.7,q:["XA te tend le gobelet par la fenêtre","« Cul sec, le sobre ! »"]},true); });
+    }
+    return;
+  }
+  if(d<=step){ if(c.way.length) c.way.shift(); else { c.hb=4; for(let i=0;i<8;i++) Gm.skids.push({a:[xa.m[0]+rnd(-14,14),xa.m[1]+rnd(-14,14)],b:[xa.m[0]+rnd(-14,14),xa.m[1]+rnd(-14,14)],t:0}); } }
+}
+
+// ================= FICHE DU BAR =================
+const sheet=document.getElementById('sheet');
+function showSheet(html){ sheet.innerHTML=html; sheet.classList.remove('hidden'); document.getElementById('bottom').style.visibility='hidden'; fitMap(); }
+function closeSheet(){ sheet.classList.add('hidden'); document.getElementById('bottom').style.visibility=''; fitMap(); }
+function fitMap(){ const h=sheet.classList.contains('hidden')?0:sheet.offsetHeight; if(h!==sheetH){ sheetH=h; layout(); } }
+const fmtDur=m=>m>=60?`${m/60} h`:`${m} min`;
+function openSheet(b){
+  if(Gm.over||Gm.duel) return;
+  const t=Gm.t, open=isOpen(b,t), me=Gm.me, xa=Gm.xa;
+  const kind=b.k==="pmu"?"🏇 PMU · bar-tabac":b.k==="club"?"🪩 Boîte de nuit · 200 pts":"🌙 Bar de nuit";
+  let h=`<h3>${b.n}</h3><div class="tags"><span class="tag">${kind}</span><span class="tag">📍 ${b.a}</span><span class="tag ${open?'':'closed'}">🕘 ${hh(b.o)}–${hh(b.c)}${open?'':' · FERMÉ'}</span>${b.owner===1?'<span class="tag me">🏴 À toi</span>':b.owner===2?'<span class="tag xa">🦜 À XA</span>':''}</div>`;
+  if(!open){
+    const wait=t<b.o;
+    h+=`<div class="claim"><div>${wait?`Ouvre à <b>${hh(b.o)}</b>. Tu peux attendre devant (le temps file, XA aussi).`:`Fermé depuis ${hh(b.c)}. Va voir ailleurs.`}</div>${wait?'<button id="wait">⏩ Attendre</button>':''}</div>`;
+  } else {
+    if(b.owner===0) h+=`<div class="claim"><div id="claimTxt"></div><button id="claim">🏴 Drapeau</button></div>`;
+    else if(b.owner===2) h+=`<div class="claim"><div>Le drapeau de XA flotte ici.${b.cd>t?` Revanche possible à ${hh(b.cd)}.`:' Défie-le pour le reprendre : le perdant boit.'}</div><button id="steal" style="background:var(--xa)" ${b.cd>t?'disabled':''}>⚔️ Chifoumi</button></div>`;
+    else h+=`<div class="claim"><div>🏴 Ton drapeau. Si XA débarque, il te défiera au chifoumi pour le prendre.</div></div>`;
+    b.people.forEach((p,i)=>{
+      const acts=p.trap?`<span class="tag xa">⚠️ Piège</span>`:p.acts.map(a=>`<button class="${ACT[a].cls||''}" data-p="${i}" data-a="${a}">${ACT[a].l} <small>${fmtDur(ACT[a].dur)}${ACT[a].alc<0?' · dessaoule':''}</small></button>`).join('');
+      h+=`<div class="who"><div class="av">${p.e}</div><div class="nm"><b>${p.n}</b><span>${p.d}</span></div><div class="acts">${acts}</div></div>`;
+    });
+    if(b.k!=="club") h+=`<div class="who"><div class="av">🍺</div><div class="nm"><b>Le comptoir</b><span>Vite fait</span></div><div class="acts"><button data-p="-1" data-a="pinte">${ACT.pinte.l} <small>10 min</small></button></div></div>`;
+  }
+  h+=`<button class="leave" id="leave">🚶 Touche un autre bar sur la carte</button>`;
+  showSheet(h);
+  sheet.querySelectorAll('button[data-a]').forEach(bt=>bt.onclick=()=>{ const p=+bt.dataset.p; startAct(b,p<0?{n:"Le comptoir",e:"🍺"}:b.people[p],ACT[bt.dataset.a]); });
+  refreshClaim();
+  const cl=document.getElementById('claim'); if(cl) cl.onclick=()=>{ if(me.alc>xa.alc&&b.owner===0){ b.owner=1; fx(b.m,"🏴 Drapeau planté !",'#3ee0ff'); log(`🏴 ${b.n} est à toi (${me.alc.toFixed(2)} g contre ${xa.alc.toFixed(2)} g)`); openSheet(b);} };
+  const sl=document.getElementById('steal'); if(sl) sl.onclick=()=>stealDuel(b);
+  const wt=document.getElementById('wait'); if(wt) wt.onclick=()=>{ Gm.waitFor=b; showSheet(`<div id="act"><div class="emo">⏳</div><b>Tu attends devant ${b.n}…</b><div class="t" id="actt">${hh(Gm.t)}</div><div class="quip">Ouverture à ${hh(b.o)}</div></div>`); };
+  document.getElementById('leave').onclick=closeSheet;
+}
+function refreshClaim(){ const c=document.getElementById('claim'), tx=document.getElementById('claimTxt'); if(!c||!tx) return; const me=Gm.me, xa=Gm.xa, ok=me.alc>xa.alc; c.disabled=!ok; tx.innerHTML=`Toi <b style="color:var(--cyan)">${me.alc.toFixed(2)} g</b> · XA <b style="color:var(--xa)">${xa.alc.toFixed(2)} g</b><br>${ok?"T'es plus sous que XA : plante ton drapeau !":"Bar libre : il faut être plus sous que XA pour le prendre."}`; }
+function startAct(b,p,A,forced){
+  Gm.act={b,p,A,t:0,qt:0,forced};
+  if(A.sober) Gm.cheat+=1.2;
+  renderAct();
+}
+function renderAct(){ const X=Gm.act; showSheet(`<div id="act"><div class="emo">${X.p.e||'🍺'}</div><b>${X.A.l}${X.p.n&&!X.forced&&X.p.n!=="Le comptoir"?' avec '+X.p.n:''}</b><div class="t" id="actt">${hh(Gm.t)}</div><div class="pb"><i id="actbar"></i></div><div class="quip" id="actq">${pick(X.A.q)}</div></div>`); }
+function tickAct(dtMin){
+  const X=Gm.act; if(X.pending) return;
+  X.t+=dtMin; X.qt+=dtMin;
+  addAlc(Gm.me,X.A.alc*dtMin/X.A.dur);
+  if(Gm.over) return;
+  const e=document.getElementById('actt'); if(e){ e.textContent=hh(Gm.t); document.getElementById('actbar').style.width=Math.min(100,X.t/X.A.dur*100)+'%'; }
+  if(X.qt>X.A.dur/3){X.qt=0; const q=document.getElementById('actq'); if(q) q.textContent=pick(X.A.q);}
+  if(X.t>=X.A.dur){ Gm.act=null; const b=X.b;
+    fx(b.m||Gm.me.m,X.A.alc>=0?`+${X.A.alc.toFixed(2)} g`:`${X.A.alc.toFixed(2)} g`,X.A.alc>=0?'#ffb020':'#7cf29a');
+    if(X.A===ACT.drague) log(pick(["💃 Elle t'a souri… puis elle est partie avec ton verre","💃 Numéro obtenu ! (c'était celui d'une pizzeria)","💃 Wali walou."]));
+    if(Gm.me.in===b&&!b.trapAt) b.trapAt=Gm.t+0.1+expo(0.5);
+    if(b.street) closeSheet(); else openSheet(b);
+  }
+}
+
+// ================= BOUCLE =================
+let last=performance.now();
+function frame(now){ const dt=Math.min(0.05,(now-last)/1000); last=now; if(Gm&&!Gm.paused&&!Gm.over) update(dt); render(now/1000); requestAnimationFrame(frame); }
+function update(dt){
+  const me=Gm.me, xa=Gm.xa;
+  for(const f of Gm.fx) f.t+=dt; Gm.fx=Gm.fx.filter(f=>f.t<2.8);
+  for(const s of Gm.skids) s.t+=dt; Gm.skids=Gm.skids.filter(s=>s.t<(s.faint?2.5:7));
+  for(const s of Gm.smoke) s.t+=dt; Gm.smoke=Gm.smoke.filter(s=>s.t<1.5);
+  if(Gm.duel||(Gm.act&&Gm.act.pending)){ hud(); return; } // le temps s'arrête pendant le chifoumi
+  if(!Gm.act&&Gm.queue.length){ Gm.queue.shift()(); return; }
+  let speed=1; if(Gm.act) speed=3; else if(Gm.waitFor) speed=8;
+  const dH=dt*RATE*speed, dMin=dH*60;
+  Gm.t+=dH;
+  addAlc(me,-0.2*dH); addAlc(xa,-0.15*dH);
+  if(Gm.act) tickAct(dMin);
+  if(Gm.over) return;
+  if(Gm.waitFor){ const b=Gm.waitFor; const e=document.getElementById('actt'); if(e) e.textContent=hh(Gm.t); if(Gm.t>=b.o){ Gm.waitFor=null; log(`🔓 ${b.n} ouvre ses portes`); b.trapAt=Gm.t+0.02+expo(0.1); if(xa.in===b&&!xa.car) meetXA(b); else openSheet(b);} }
+  Gm.xaCd=Math.max(0,Gm.xaCd-dMin); Gm.srcCd=Math.max(0,Gm.srcCd-dMin);
+  // anti-triche : sobre exprès => XA en chasse
+  if(Gm.t>18.5){ if(me.alc<0.6) Gm.cheat+=dH; else Gm.cheat=Math.max(0,Gm.cheat-dH*2);
+    if(!Gm.hunt&&Gm.cheat>1.2){ Gm.hunt=true; Gm.xa.in=null; Gm.xa.car={hunt:1,way:[]}; fx(xa.m,"🚙 XA démarre le 4x4…",'#ff7a1a'); log("🚙 « Il boit pas, lui ? » XA te prend en chasse en 4x4 !"); }
+    if(Gm.hunt&&me.alc>1.0){ Gm.hunt=false; Gm.cheat=0; } }
+  xaUpdate(dMin);
+  // les 3 ex naviguent en ville, chacune de son côté
+  for(const ex of Gm.exes){ ex.cd=Math.max(0,ex.cd-dMin);
+    if(!ex.to||dist(ex.m,ex.to.m)<15){ let p; for(let k=0;k<8;k++){ p=Math.random()<0.3?pick(Gm.bars).m:[rnd(BB.x0+50,BB.x1-50),rnd(BB.y0+50,BB.y1-50)]; if(Gm.exes.every(o=>o===ex||!o.to||dist(o.to.m,p)>200)) break; } ex.to={m:[...p]}; }
+    walk(ex,dMin,WALK*0.75);
+    if(ex.cd<=0&&!Gm.act&&!Gm.duel&&dist(ex.m,me.m)<25){ ex.cd=60; Gm.st.ex++;
+      if(me.to&&me.from&&me.to!==me.from){ me.to=me.from; me.target=me.from; fx(me.m,`💔 ${ex.n}, ton ex…\nDEMI-TOUR !`,'#ff7a9c'); log(`💔 Tu croises ${ex.n}, ton ex. Demi-tour !`); }
+      else if(me.in){ addAlc(me,0.2); fx(me.m,`💔 ${ex.n} débarque\nTu noies ça : +0.2 g`,'#ff7a9c'); log(`💔 ${ex.n}, ton ex, débarque (${me.in.n}). Malaise. Tu bois.`); }
+      else { me.stop=Math.max(me.stop,10); fx(me.m,`💔 ${ex.n}, ton ex…\n10 min de malaise`,'#ff7a9c'); log(`💔 Tu croises ${ex.n}. 10 min de malaise.`); } } }
+  // pièges des personnages
+  if(me.in&&!Gm.act&&!Gm.waitFor&&isOpen(me.in,Gm.t)&&me.in.trapAt&&Gm.t>=me.in.trapAt){ me.in.trapAt=null; if(fireTrap(me.in)) return; me.in.trapAt=null; }
+  // événements
+  Gm.nextEv-=dH; if(Gm.nextEv<=0){ Gm.nextEv=rnd(0.25,0.5); if(Gm.events.length<7) spawnEvent(); }
+  Gm.events=Gm.events.filter(e=>Gm.t-e.born<1.6&&!e.used);
+  // marche du joueur
+  if(me.to&&!Gm.act){
+    if(me.stop>0) me.stop-=dMin;
+    else{
+      walk(me,dMin,WALK); if(me.boost>0) me.boost-=dMin;
+      for(const e of Gm.events){ if(!e.used&&dist(me.m,e.m)<22){ e.used=true; trigger(e); } }
+      for(const p of PUNKSPOTS){ if(dist(me.m,p)<22&&(!p.cd||Gm.t>p.cd)){ p.cd=Gm.t+0.6; punkTax(p); } }
+      if(Gm.t<19.5&&Gm.srcCd<=0&&me.alc>0.2&&dist(me.m,toM(HALL.lat,HALL.lon))<30){ Gm.srcCd=60; addAlc(me,-0.35); fx(toM(HALL.lat,HALL.lon),"Eau de Vichy ⛲\n-0.35 g",'#9fe7ff'); log("⛲ Un verre d'eau au Hall des Sources (ouvert jusqu'à 19h30)"); }
+      if(!xa.in&&!xa.car&&Gm.xaCd<=0&&dist(me.m,xa.m)<22){ me.to=null; me.in=null; meetXA(null); }
+      else for(const b of Gm.bars){ if(dist(me.m,b.m)>=15) continue; if(b===me.target){ arriveMe(b); break; } if(me.skip.has(b)) continue; me.skip.add(b); if(Math.random()<Math.min(0.8,Math.max(0,(me.alc-0.4)*0.45))){ arriveMe(b); break; } }
+    }
+  }
+  if(Gm.t>=29) finish();
+  hud();
+}
+function hud(){
+  document.getElementById('clk').textContent=hh(Gm.t); document.querySelector('#clock small').textContent=Gm.t>=24?'samedi':'vendredi';
+  const me=Gm.me, xa=Gm.xa;
+  document.getElementById('meF').style.width=Math.min(100,me.alc/COMA*100)+'%';
+  document.getElementById('xaF').style.width=Math.min(100,xa.alc/COMA*100)+'%';
+  document.getElementById('meV').textContent=me.alc.toFixed(2)+(me.alc>2.5?' 🤢':me.alc>1.5?' 🥴':'');
+  document.getElementById('xaV').textContent=xa.alc.toFixed(2);
+  const n=Gm.bars.length, a=myBars(), c=xaBars();
+  document.getElementById('barMe').style.width=(a/n*100)+'%'; document.getElementById('barXa').style.width=(c/n*100)+'%';
+  document.getElementById('barV').textContent=`${a}–${c}`;
+  refreshClaim();
+  const sc=scores(); document.getElementById('scMe').textContent=sc.me; document.getElementById('scXa').textContent=sc.xa;
+}
+
+// ================= CLASSEMENT (Netlify Function /api/scores) =================
+const API='/api/scores';
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function renderLB(el,top,mine){
+  if(!top||!top.length){ el.innerHTML='<h4>🏆 Classement</h4><div class="msg">Personne encore. À toi l\'honneur !</div>'; return; }
+  el.innerHTML='<h4>🏆 Classement</h4><ol>'+top.slice(0,10).map(e=>`<li class="${mine&&e.id===mine?'mine':''}">${esc(e.name)} <span>${e.score}</span></li>`).join('')+'</ol>';
+}
+async function loadLB(el,mine){
+  try{ const r=await fetch(API,{cache:'no-store'}); if(!r.ok) throw 0; renderLB(el,await r.json(),mine); }
+  catch(e){ el.innerHTML='<h4>🏆 Classement</h4><div class="msg">Le classement en ligne marche sur la version publiée sur Netlify.</div>'; }
+}
+let lastScore=null;
+async function saveScore(){
+  const inp=document.getElementById('pname'), btn=document.getElementById('saveBtn');
+  const name=inp.value.trim().slice(0,16); if(!name){ inp.focus(); return; }
+  try{ localStorage.setItem('vichy_name',name); }catch(e){}
+  btn.disabled=true; btn.textContent='…';
+  try{
+    const r=await fetch(API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name,...lastScore})});
+    if(!r.ok) throw 0; const d=await r.json();
+    document.getElementById('saveBox').innerHTML=`<div class="msg" style="flex:1;text-align:center;color:var(--cyan);font-weight:800">${d.rank?`Tu es ${d.rank}${d.rank===1?'er':'e'} au classement !`:'Score enregistré !'}</div>`;
+    renderLB(document.getElementById('lbEnd'),d.top,d.id);
+  }catch(e){ btn.disabled=false; btn.textContent='Réessayer'; }
+}
+function getBest(){ try{return +localStorage.getItem('vichy_best4')||0}catch(e){return 0} }
+function setBest(v){ try{localStorage.setItem('vichy_best4',v)}catch(e){} }
+function finish(){
+  Gm.over=true; Gm.duel=null; closeSheet(); const sc=scores(); const win=sc.me>sc.xa;
+  const best=getBest(); if(sc.me>best) setBest(sc.me);
+  showEnd(win?"Vichy est à toi !":"XA te met la misère",win?'#3ee0ff':'#ff7a1a',`5h, le Passage Club ferme. ${sc.allMe?'💎 ALL-IN : tous les bars ! ':''}${win?pick(["Légende des Quatre-Chemins 👑","Roi du passage du Commerce","Empereur de la place de la Gare"]):pick(["XA rentre en chantant, toi en rampant","Revanche vendredi prochain ?"])}`,sc);
+}
+function coma(){
+  if(Gm.over) return; Gm.over=true; Gm.act=null; Gm.duel=null; closeSheet();
+  const sc=scores(); showEnd("Urgences de Vichy 🚑",'#ff4fa3',`3,2 g/L à ${hh(Gm.t)}. Fin de soirée sur un brancard. XA gagne par forfait.`,{...sc,me:0});
+}
+function showEnd(t,c,sub,sc){
+  const s=Gm.st;
+  document.getElementById('endtitle').textContent=t; document.getElementById('endtitle').style.color=c;
+  document.getElementById('endsub').textContent=sub;
+  document.getElementById('endvs').innerHTML=`<div class="${sc.me>sc.xa?'w':''}">Toi<b style="color:var(--cyan)">${sc.me}</b>${myBars()} bar(s) · ${sc.meFlags} pts<br>+ ${Gm.me.bonus} chifoumi${sc.allMe?'<br>+ 500 all-in 💎':''}</div><div class="${sc.xa>=sc.me?'w':''}">XA<b style="color:var(--xa)">${sc.xa}</b>${xaBars()} bar(s) · ${sc.xaFlags} pts<br>+ ${Gm.xa.bonus} bonus${sc.allXa?'<br>+ 500 all-in':''}</div>`;
+  document.getElementById('endstats').innerHTML=
+   `✊ Chifoumis : <b>${s.duelW}</b> gagnés · <b>${s.duelL}</b> perdus<br>⚔️ Bars repris à XA : <b>${s.steals}</b> · piqués par XA : <b>${s.lost}</b><br>⚠️ Tournées imposées (Kevin, Evan, Emilien, Pong, Quentin) : <b>${s.traps}</b>${s.armageddon?` dont <b>${s.armageddon}</b> Armageddon ☢️`:''}<br>🥴 Mauvais bar : <b>${s.wrong}</b> · 💔 ex croisées : <b>${s.ex}</b> · 🐕 clopes taxées : <b>${s.punks}</b><br>${s.hunted?`🚙 Coincé par XA en 4x4 : <b>${s.hunted}</b><br>`:''}🌡️ Alcoolémie max : <b>${s.maxAlc.toFixed(2)} g/L</b>`;
+  lastScore={score:sc.me,bars:myBars(),maxAlc:+Gm.st.maxAlc.toFixed(2)};
+  const sb=document.getElementById('saveBox');
+  if(sc.me>0){ sb.classList.remove('hidden'); sb.innerHTML='<input id="pname" maxlength="16" placeholder="Ton prénom" autocomplete="off"><button id="saveBtn">Enregistrer</button>'; let nm=''; try{nm=localStorage.getItem('vichy_name')||''}catch(e){} document.getElementById('pname').value=nm; document.getElementById('saveBtn').onclick=saveScore; document.getElementById('pname').onkeydown=e=>{if(e.key==='Enter')saveScore();}; }
+  else sb.classList.add('hidden');
+  loadLB(document.getElementById('lbEnd'));
+  setTimeout(()=>document.getElementById('end').classList.remove('hidden'),600);
+}
+
+// ================= RENDU =================
+function fig(x,y,c,sc,ph,moving,alc){
+  const st=moving?Math.sin(ph*6)*2.5*sc:0, lean=Math.sin(ph*3)*alc*0.12;
+  ctx.save(); ctx.translate(x,y); ctx.rotate(lean); ctx.strokeStyle=c; ctx.lineWidth=2.2*sc; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(0,-4*sc); ctx.lineTo(0,4*sc); ctx.moveTo(0,4*sc); ctx.lineTo(-2.5*sc+st*0.5,9*sc); ctx.moveTo(0,4*sc); ctx.lineTo(2.5*sc-st*0.5,9*sc); ctx.moveTo(0,-1*sc); ctx.lineTo(-3.5*sc,2*sc); ctx.moveTo(0,-1*sc); ctx.lineTo(3.5*sc,2*sc); ctx.stroke();
+  ctx.fillStyle=c; ctx.beginPath(); ctx.arc(0,-7*sc,3.2*sc,0,7); ctx.fill(); ctx.restore();
+}
+function jeep(x,y,ang,T){ // petit 4x4 vu de dessus
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(1.7,1.7);
+  ctx.fillStyle='#111'; for(const [wx,wy] of [[-7,-6],[6,-6],[-7,6],[6,6]]){ ctx.fillRect(wx-2.5,wy-1.8,5,3.6); }
+  ctx.fillStyle='#ff7a1a'; rr(ctx,-10,-5,20,10,2.5); ctx.fill();
+  ctx.fillStyle='#2b2f55'; ctx.fillRect(-1,-4,5,8);                 // pare-brise
+  ctx.strokeStyle='#ffd0a8'; ctx.lineWidth=1.2; ctx.strokeRect(-7,-4,6,8); // arceau
+  ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(-11.5,0,2.6,0,7); ctx.fill(); // roue de secours
+  ctx.fillStyle='#fff6a8'; ctx.fillRect(9,-4,2,2); ctx.fillRect(9,2,2,2);    // phares
+  ctx.restore();
+}
+function render(T){
+  ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,W,H);
+  ctx.drawImage(bg,0,0,W,H);
+  if(!Gm) return;
+  const sway=Math.max(0,Gm.me.alc-1.5)*0.005;
+  ctx.save(); if(sway>0){ ctx.translate(W/2,H/2); ctx.rotate(Math.sin(T*0.9)*sway); ctx.translate(-W/2,-H/2); ctx.drawImage(bg,0,0,W,H); }
+  const r=R(); ctx.textAlign='center'; ctx.textBaseline='middle';
+  if(Gm.t<19.5){ const s=G(HALL.lat,HALL.lon); ctx.globalAlpha=0.35+0.15*Math.sin(T*2); ctx.fillStyle='#4fc3ff'; ctx.beginPath(); ctx.arc(s[0],s[1],Math.max(8,30*SC),0,7); ctx.fill(); ctx.globalAlpha=1; }
+  // traces de pneus
+  for(const k of Gm.skids){ const a=S(k.a), b=S(k.b); ctx.globalAlpha=Math.max(0,(k.faint?0.35:0.8)*(1-k.t/(k.faint?2.5:7))); ctx.strokeStyle='#05050c'; ctx.lineWidth=k.faint?2:3; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke(); } ctx.globalAlpha=1;
+  const me=Gm.me, xa=Gm.xa;
+  if(me.to&&me.to.m){ const a=S(me.m), b=S(me.to.m); ctx.strokeStyle='#3ee0ff55'; ctx.lineWidth=2; ctx.setLineDash([6,8]); ctx.lineDashOffset=-T*25; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke(); ctx.setLineDash([]); }
+  // événements + coins à punks
+  for(const p of PUNKSPOTS){ if(p.cd&&Gm.t<p.cd) continue; const s=S(p); ctx.globalAlpha=0.25; ctx.fillStyle='#ff6060'; ctx.beginPath(); ctx.arc(s[0],s[1],r*0.7,0,7); ctx.fill(); ctx.globalAlpha=1; ctx.font=`${r*0.85}px serif`; ctx.fillText('🐕',s[0],s[1]); }
+  for(const e of Gm.events){ const s=S(e.m); const age=Gm.t-e.born, f=Math.min(1,age*8,(1.6-age)*4); ctx.globalAlpha=f*0.25; ctx.fillStyle=['kebab','pastille'].includes(e.k)?'#7cf29a':'#ff6060'; ctx.beginPath(); ctx.arc(s[0],s[1],r*0.7,0,7); ctx.fill(); ctx.globalAlpha=f; ctx.font=`${r*0.9}px serif`; ctx.fillText(e.e,s[0],s[1]+Math.sin(T*3+s[0])*2); ctx.globalAlpha=1; }
+  // bars
+  for(const b of Gm.bars){
+    const a=b.anchor, p=b.bub, open=isOpen(b,Gm.t);
+    const col=b.owner===1?'#3ee0ff':b.owner===2?'#ff7a1a':!open?'#5a5d85':b.k==="pmu"?'#7cf29a':b.k==="club"?'#c77dff':'#ff4fa3';
+    ctx.strokeStyle=col; ctx.globalAlpha=.7; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(p[0],p[1]); ctx.stroke(); ctx.globalAlpha=1;
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(a[0],a[1],3.5,0,7); ctx.fill();
+    ctx.shadowColor=col; ctx.shadowBlur=open?14:0; ctx.fillStyle=b.owner===1?'#0d5566':b.owner===2?'#5a2a08':'#23254d'; ctx.beginPath(); ctx.arc(p[0],p[1],r,0,7); ctx.fill(); ctx.shadowBlur=0;
+    ctx.strokeStyle=col; ctx.lineWidth=2.5; ctx.stroke();
+    if(me.in===b){ ctx.strokeStyle='#fff'; ctx.setLineDash([5,5]); ctx.lineDashOffset=-T*20; ctx.beginPath(); ctx.arc(p[0],p[1],r*1.3,0,7); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.globalAlpha=open?1:0.55; ctx.font=`${r*0.9}px serif`; ctx.fillText(b.owner===1?'🏴':b.owner===2?'🦜':b.k==="pmu"?'🏇':b.k==="club"?'🪩':'🍸',p[0],p[1]+1); ctx.globalAlpha=1;
+    ctx.font=`700 ${Math.max(9.5,r*0.5)}px Rubik`; ctx.lineWidth=3; ctx.strokeStyle='#12132a'; ctx.strokeText(b.n,p[0],p[1]+r*1.35); ctx.fillStyle=open?'#f1efff':'#8b8fb8'; ctx.fillText(b.n,p[0],p[1]+r*1.35);
+    if(!open){ const tx=Gm.t<b.o?'ouvre '+hh(b.o):'fermé'; ctx.font=`700 ${Math.max(8.5,r*0.42)}px Rubik`; ctx.fillStyle='#ff9ab0'; ctx.strokeText(tx,p[0],p[1]+r*1.95); ctx.fillText(tx,p[0],p[1]+r*1.95); }
+    if(open&&b.people.some(q=>q.trap)){ ctx.font=`${r*0.55}px serif`; ctx.fillText('⚠️',p[0]+r*0.95,p[1]-r*0.8); }
+  }
+  // les ex
+  for(const ex of Gm.exes){ const s=S(ex.m); fig(s[0],s[1],'#ff7a9c',1,ex.ph,true,0); ctx.font='800 10px Rubik'; ctx.lineWidth=3; ctx.strokeStyle='#12132a'; ctx.strokeText('💔 '+ex.n,s[0],s[1]-15); ctx.fillStyle='#ffb3c6'; ctx.fillText('💔 '+ex.n,s[0],s[1]-15); }
+  // fumée du frein à main
+  for(const sm of Gm.smoke){ const s=S(sm.m); ctx.globalAlpha=Math.max(0,0.5*(1-sm.t/1.5)); ctx.fillStyle='#cfd2e8'; ctx.beginPath(); ctx.arc(s[0],s[1]-sm.t*10,4+sm.t*10,0,7); ctx.fill(); } ctx.globalAlpha=1;
+  // XA (à pied ou en XA-mobile)
+  if(xa.car){ const s=S(xa.m); jeep(s[0],s[1],xa.car.ang||0,T); ctx.font='800 11px Rubik'; ctx.lineWidth=3; ctx.strokeStyle='#12132a'; const lb=xa.car.hunt?'🚙 XA te chasse !':'🚙 XA'; ctx.strokeText(lb,s[0],s[1]-16); ctx.fillStyle='#ffb36b'; ctx.fillText(lb,s[0],s[1]-16); }
+  else { const s=xa.in?[xa.in.bub[0]-r*1.05,xa.in.bub[1]]:S(xa.m); ctx.globalAlpha=0.25+0.1*Math.sin(T*4); ctx.fillStyle='#ff7a1a'; ctx.beginPath(); ctx.arc(s[0],s[1],Math.max(14,22*SC),0,7); ctx.fill(); ctx.globalAlpha=1;
+    fig(s[0],s[1],'#ff7a1a',1.2,xa.ph,!xa.in&&xa.stop<=0,xa.alc); ctx.font='800 11px Rubik'; ctx.lineWidth=3; ctx.strokeStyle='#12132a'; ctx.strokeText('🦜 XA',s[0],s[1]-17); ctx.fillStyle='#ffb36b'; ctx.fillText('🦜 XA',s[0],s[1]-17); }
+  // toi
+  { const s=me.in?[me.in.bub[0]+r*1.05,me.in.bub[1]]:S(me.m); fig(s[0],s[1],'#ffffff',1.35,me.ph,!!me.to&&me.stop<=0&&!Gm.act,me.alc);
+    if(me.stop>0&&me.to){ ctx.font=`${r*0.6}px serif`; ctx.fillText('💬',s[0]+r*0.6,s[1]-r*0.9); } }
+  for(const f of Gm.fx){ const s=S(f.m); const al=Math.min(1,(2.8-f.t)*1.5); ctx.globalAlpha=al; ctx.font=`800 ${Math.max(12,Math.min(15,W*0.034))}px Rubik`; ctx.lineWidth=4; ctx.strokeStyle='#12132a';
+    f.txt.split('\n').forEach((l,i)=>{ const yy=Math.max(M.y+16,s[1]-r*2-f.t*14)+i*16, xx=Math.max(M.x+100,Math.min(M.x+M.w-100,s[0])); ctx.strokeText(l,xx,yy); ctx.fillStyle=i?'#fff':f.color; ctx.fillText(l,xx,yy); }); ctx.globalAlpha=1; }
+  ctx.restore();
+}
+
+// ================= CONTRÔLES =================
+function barAt(x,y){ let best=null,bd=1e9; for(const b of Gm.bars){ for(const q of [b.bub,b.anchor]){ const d=Math.hypot(q[0]-x,q[1]-y); if(d<bd){bd=d;best=b;} } } return bd<R()*1.4?best:null; }
+cv.addEventListener('pointerup',e=>{ if(!Gm||Gm.paused||busy()) return; const b=barAt(e.clientX,e.clientY); if(b) goTo(b); else if(Gm.me.in) closeSheet(); });
+document.getElementById('pause').onclick=()=>{ if(!Gm||Gm.over)return; Gm.paused=true; document.getElementById('paused').classList.remove('hidden'); };
+document.getElementById('resume').onclick=()=>{ Gm.paused=false; last=performance.now(); document.getElementById('paused').classList.add('hidden'); };
+document.getElementById('quit').onclick=()=>{ document.getElementById('paused').classList.add('hidden'); showStart(); };
+document.getElementById('go').onclick=start;
+document.getElementById('again').onclick=()=>{ document.getElementById('end').classList.add('hidden'); showStart(); };
+function start(){ document.getElementById('start').classList.add('hidden'); document.getElementById('hud').classList.remove('hidden'); document.getElementById('bottom').classList.remove('hidden'); newGame(); hud(); }
+function showStart(){ Gm=null; closeSheet(); const b=getBest(); document.getElementById('best').textContent=b?`🏆 Ton meilleur score : ${b}`:''; loadLB(document.getElementById('lbStart')); document.getElementById('start').classList.remove('hidden'); document.getElementById('hud').classList.add('hidden'); document.getElementById('bottom').classList.add('hidden'); }
+addEventListener('resize',layout);
+layout(); document.fonts&&document.fonts.ready.then(layout);
+showStart(); requestAnimationFrame(frame);
+window.__dbg={get G(){return Gm},goTo:i=>goTo(Gm.bars[i])};
+})();
+</script>
+</body>
+</html>
